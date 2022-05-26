@@ -71,3 +71,25 @@ def histogramUsmerjenihGradientov(slika):
             koncenNormaliziranV = np.append(koncenNormaliziranV, normaliziranV)
 
     return koncenNormaliziranV
+
+# Algoritem izločanja značilnic s lokalnimi binarnimi vzorci
+def lokalniBinarniVzorci(slika): # Funkcija za izvedbo konvolucije
+    (visinaSlike, sirinaSlike) = slika.shape[:2]
+    slika = cv2.copyMakeBorder(slika, 1, 1, 1, 1, cv2.BORDER_CONSTANT, None, value=0)
+    izhodnaSlika = np.zeros((visinaSlike, sirinaSlike), dtype=np.uint8) # Incializiramo novo matriko za izhod konvolucije
+    for i in np.arange(1, visinaSlike): # Izvedemo postopek nad celotno vhodno sliko
+        for j in np.arange(1, sirinaSlike):
+            izrez = slika[i-1:i+2,j-1:j+2]
+            binarnaMatrikaIzreza = cv2.threshold(izrez, izrez[1,1]-1, 1, cv2.THRESH_BINARY)
+            bin = 0                                            # Bite iz binarne slike okolice piksla dodajamo v izhodno vrednost
+            bin = (bin << 1) | binarnaMatrikaIzreza[1][1,0]
+            bin = (bin << 1) | binarnaMatrikaIzreza[1][2,0]
+            bin = (bin << 1) | binarnaMatrikaIzreza[1][2,1]
+            bin = (bin << 1) | binarnaMatrikaIzreza[1][2,1]
+            bin = (bin << 1) | binarnaMatrikaIzreza[1][1,2]
+            bin = (bin << 1) | binarnaMatrikaIzreza[1][0,2]
+            bin = (bin << 1) | binarnaMatrikaIzreza[1][0,1]
+            bin = (bin << 1) | binarnaMatrikaIzreza[1][0,0]
+            izhodnaSlika[i,j] = bin  # V centralni piksel zapišemo dobljeno vrednost
+    histogram = np.histogram(izhodnaSlika, 256, [0, 256])[0] # Sestavimo histogram sivin za celotno sliko iz LBP značilnic
+    return histogram
