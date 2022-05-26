@@ -1,6 +1,7 @@
 import cv2
 
 def detekcijaIzrezObraza(img_path):
+    valid= False
     #vir xml datotek za iskanje obraza:https://github.com/opencv/opencv/tree/4.x/data/haarcascades
     face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_alt2.xml')
 
@@ -10,15 +11,20 @@ def detekcijaIzrezObraza(img_path):
     
     faces = face_cascade.detectMultiScale(gray, 1.1, 4)
 
-    for (x, y, w, h) in faces:
-        crop_img = gray[y:y+h, x:x+w]
+    if(len(faces)==1):
+        valid = True
 
-    return crop_img
+        for (x, y, w, h) in faces:
+            crop_img = gray[y:y+h, x:x+w]
+        return crop_img,valid
+    
+    else:
+        return img,valid
     
 
     
     
 
-#img=detekcijaIzrezObraza('test.jpg')
+#img,valid=detekcijaIzrezObraza('test.jpg')
 #cv2.imshow("cropped", img)
 #cv2.waitKey()
