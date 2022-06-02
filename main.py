@@ -1,3 +1,4 @@
+import sys
 import cv2
 
 def detekcijaIzrezObraza(img_path):
@@ -20,11 +21,9 @@ def detekcijaIzrezObraza(img_path):
     
     else:
         return img,valid
-    
 
-    
-    
-
-#img,valid=detekcijaIzrezObraza('test.jpg')
-#cv2.imshow("cropped", img)
-#cv2.waitKey()
+slika, valid = detekcijaIzrezObraza("images/"+sys.argv[1]) # Detekcija obraza se bo izvedla nad naloženo sliko podane v prvem argumentu te skripte
+if valid == True :
+    slika = cv2.resize(slika, (64, 64)) # Pomanjšamo izhodni izrez obraza, pri strojnem učenju mora biti nabor vseh slik enakih dimenzij
+    # TODO: Izločitev značilnic iz slike, zapis/dodajanje novega vektorja značilnic v polje značilnic učne množice
+    cv2.imwrite("faces/"+sys.argv[1]+".png", slika) # Zapišemo zaznan obraz v izhodno datoteko sviniske slike v mapi faces
