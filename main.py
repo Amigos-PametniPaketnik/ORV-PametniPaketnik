@@ -1,6 +1,8 @@
 import sys
 import numpy as np
 import cv2
+import pickle
+from sklearn.neural_network import MLPClassifier 
 
 # Izračun matrike smeri Gradientov v kotih izraženih v stopinjah
 def smerGradienta(gx, gy):
@@ -113,8 +115,45 @@ def detekcijaIzrezObraza(img_path):
     else:
         return img,valid
 
-slika, valid = detekcijaIzrezObraza("images/"+sys.argv[1]) # Detekcija obraza se bo izvedla nad naloženo sliko podane v prvem argumentu te skripte
-if valid == True :
-    slika = cv2.resize(slika, (64, 64)) # Pomanjšamo izhodni izrez obraza, pri strojnem učenju mora biti nabor vseh slik enakih dimenzij
-    # TODO: Izločitev značilnic iz slike, zapis/dodajanje novega vektorja značilnic v polje značilnic učne množice
-    cv2.imwrite("faces/"+sys.argv[1]+".png", slika) # Zapišemo zaznan obraz v izhodno datoteko sviniske slike v mapi faces
+
+operacija = sys.argv[1] # opcije -> 0: preverjanje indentitete osebe na podlagi dobljene slike; 1: dodajanje nove slike osebe in učenje mreže
+
+if operacija == "1":
+    slika, valid = detekcijaIzrezObraza("images/"+sys.argv[2]) # Detekcija obraza se bo izvedla nad naloženo sliko podane v prvem argumentu te skripte
+    if valid == True :
+        slika = cv2.resize(slika, (64, 64)) # Pomanjšamo izhodni izrez obraza, pri strojnem učenju mora biti nabor vseh slik enakih dimenzij
+        ucnaMnozica = np.array([])
+        labeleUcneMnozice = np.array([])
+        with open("featuresmodels/ucnamnozica.npy", "rb") as d:
+            ucnaMnozica = np.load(d)
+            labeleUcneMnozice = np.load(d)
+        
+        lbp = lokalniBinarniVzorci(slika).astype(np.float64)  # Izračunamo značilnice LBP iz posamezne slike
+        #lbp = skimage.feature.local_binary_pattern(slikice[i], 8 * 1, 1)
+        hog = histogramUsmerjenihGradientov(slika) # Izračunamo značilnice Histograma usmerjwnih gradientov
+        #hog = skimage.feature.hog(slikice[i], orientations=8, pixels_per_cell=(8, 8), cells_per_block=(2, 2))
+        znacilnice = np.concatenate((lbp, hog)) # LBP in HOG značilnice združimo v skupen vektor
+
+        ucnaMnozica = np.vstack([ucnaMnozica, znacilnice])
+        labeleUcneMnozice = np.append(labeleUcneMnozice, int(sys.argv[3]))
+        with open("featuresmodels/ucnamnozica.npy", "wb") as d:
+            np.save(d, ucnaMnozica)
+            np.save(d, labeleUcneMnozice)
+        cv2.imwrite("faces/"+sys.argv[2]+".png", slika) # Zapišemo zaznan obraz v izhodno datoteko sviniske slike v mapi faces
+
+if operacija == "0":
+    naucenModelMreze = pickle.load(open("featuresmodels/naucenmodelClanov.sav", 'rb'))
+    slika, valid = detekcijaIzrezObraza("images/"+sys.argv[2]) # Detekcija obraza se bo izvedla nad naloženo sliko podane v prvem argumentu te skripte
+
+    if valid == True :
+        slika = cv2.resize(slika, (64, 64)) # Pomanjšamo izhodni izrez obraza, pri strojnem učenju mora biti nabor vseh slik enakih dimenzij
+
+        lbp = lokalniBinarniVzorci(slika).astype(np.float64)  # Izračunamo značilnice LBP iz posamezne slike
+        #lbp = skimage.feature.local_binary_pattern(slikice[i], 8 * 1, 1)
+        hog = histogramUsmerjenihGradientov(slika) # Izračunamo značilnice Histograma usmerjwnih gradientov
+        #hog = skimage.feature.hog(slikice[i], orientations=8, pixels_per_cell=(8, 8), cells_per_block=(2, 2))
+        znacilnice = np.concatenate((lbp, hog)) # LBP in HOG značilnice združimo v skupen vektor
+
+        rezultat = naucenModelMreze.predict_proba(znacilnice.reshape(1, -1))
+        if np.max(rezultat) > 0.80:
+            print(np.argmax(rezultat))
