@@ -140,6 +140,8 @@ if operacija == "1":
             np.save(d, ucnaMnozica)
             np.save(d, labeleUcneMnozice)
         cv2.imwrite("faces/"+sys.argv[2]+".png", slika) # Zapišemo zaznan obraz v izhodno datoteko sviniske slike v mapi faces
+        clf = MLPClassifier(hidden_layer_sizes=(512,), solver='lbfgs', max_iter=500, verbose=True).fit(mnozica, labele)
+        pickle.dump(clf, open("naucenmodel.sav", 'wb'))
 
 if operacija == "0":
     naucenModelMreze = pickle.load(open("featuresmodels/naucenmodelClanov.sav", 'rb'))
